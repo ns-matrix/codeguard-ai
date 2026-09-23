@@ -8,8 +8,12 @@ settings = get_settings()
 
 
 def _prepare_url(url: str) -> str:
-    """Supabase (and most managed Postgres) require SSL."""
-    if "ssl=" in url:
+    """Force SSL for managed Postgres unless the URL already sets ssl/sslmode.
+
+    Supabase direct hosts are often IPv6-only; prefer the Session pooler
+    (aws-0-<region>.pooler.supabase.com). Use ?ssl=disable if TLS is blocked.
+    """
+    if "ssl=" in url or "sslmode=" in url:
         return url
     host_part = url.split("@", 1)[-1].split("/", 1)[0]
     if "supabase" in host_part or "amazonaws.com" in host_part:
@@ -57,4 +61,8 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         for statement in MIGRATIONS:
-            await conn.execute(text(statement))
+            try:
+                await conn.execute(text(statement))
+            except Exception:
+                # Table missing when models were not imported into metadata
+                pass

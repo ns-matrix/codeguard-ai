@@ -72,7 +72,9 @@ DATABASE_URL=postgresql+asyncpg://postgres.abc123:YOUR_PASSWORD@aws-0-us-east-1.
 
 Notes:
 - Tables are created automatically on backend startup (`init_db` → `create_all` + column migrations).
-- SSL is forced automatically when the host contains `supabase` or `amazonaws.com`.
+- SSL is forced automatically when the host contains `supabase` or `amazonaws.com` (override with `?ssl=disable`).
+- Session pooler username is `postgres.<project-ref>` and region must match your project (e.g. `aws-0-ap-south-1`).
+- Direct host `db.<ref>.supabase.co` is often IPv6-only; use the Session pooler on IPv4 networks.
 - Tests still use a local `code_validator_test` database (see `backend/tests/conftest.py`), not Supabase.
 
 ### Configure
