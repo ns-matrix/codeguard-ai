@@ -9,7 +9,7 @@ echo "==> Backend fast tests"
 (
   cd backend
   if [[ -x .venv/bin/python ]]; then PY=.venv/bin/python; else PY=python3; fi
-  export TEST_DB_PASSWORD="${TEST_DB_PASSWORD:-KingMaker}"
+  export TEST_DB_PASSWORD="${TEST_DB_PASSWORD:-postgres}"
   "$PY" -m pytest -q -m "not llm and not integration"
 ) || fail=1
 
