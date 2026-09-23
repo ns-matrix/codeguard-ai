@@ -22,3 +22,5 @@ htmlcov/
 backend/.env
 frontend/.env
 frontend/.env.local
+.backend.pid
+.frontend.pid

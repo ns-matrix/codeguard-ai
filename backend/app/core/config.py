@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/code_validator"
 
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_DEFAULT_MODEL: str = "qwen2.5-coder:7b"
+    OLLAMA_DEFAULT_MODEL: str = "deepseek-r1:7b-fast"
     OLLAMA_TEMPERATURE: float = 0.1
     OLLAMA_NUM_PREDICT: int = 4096
 

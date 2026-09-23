@@ -36,10 +36,55 @@ Detector  Validators Scanner
 | PostgreSQL or Supabase | 14+ | Database |
 | Ollama | Latest | Local LLM inference |
 
+## Quick start (from GitHub)
+
+```bash
+git clone https://github.com/ns-matrix/codeguard-ai.git
+cd codeguard-ai
+
+# Windows (if scripts are blocked by execution policy)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\dev.ps1
+
+# Linux / macOS
+./scripts/setup.sh
+./scripts/dev.sh
+```
+
+Then open:
+
+| URL | Purpose |
+|-----|---------|
+| http://localhost:5173 | App UI |
+| http://localhost:8001/api/health | Backend health |
+| http://localhost:8001/docs | Swagger UI |
+
+`setup` creates `backend/.env` from the example (edit `DATABASE_URL` for local Postgres or Supabase before first run if needed).
+
+### Run tests
+
+```bash
+# Windows
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test.ps1
+
+# Linux / macOS
+./scripts/test.sh
+```
+
+Fast suite: backend pytest (`not llm and not integration`) + frontend `tsc` build.
+
+### Stop dev servers
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\stop.ps1
+# or
+./scripts/stop.sh
+```
+
 ## 1. Clone & Setup
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/ns-matrix/codeguard-ai.git
 cd codeguard-ai
 ```
 
@@ -145,12 +190,13 @@ Install Ollama: https://ollama.ai
 Pull a coding model:
 
 ```bash
-ollama pull qwen2.5-coder:7b
+ollama pull deepseek-r1:7b-fast
 ```
 
 Optional models:
 
 ```bash
+ollama pull qwen2.5-coder:7b
 ollama pull deepseek-r1:7b
 ollama pull codellama:7b
 ollama pull llama3.1:8b
@@ -164,18 +210,35 @@ http://localhost:11434/api/tags
 ## Docker Setup (Alternative)
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 Services:
-- `db` — PostgreSQL (port 5432)
-- `backend` — FastAPI (port 8000)
-- `frontend` — Vite dev server (port 5173)
+
+| Service | Port | Notes |
+|---------|------|-------|
+| `db` | 5432 | Postgres (`postgres`/`postgres` by default — override with env) |
+| `backend` | **8001** → container 8000 | FastAPI |
+| `frontend` | 5173 | Vite dev server (proxies `/api` → backend) |
+
+Override credentials:
+
+```bash
+POSTGRES_USER=me POSTGRES_PASSWORD=secret docker compose up --build
+```
+
+Ollama stays on the host (`http://host.docker.internal:11434`).
 
 ## Project Structure
 
 ```
 codeguard-ai/
+├── .github/workflows/ci.yml     # CI: backend tests + frontend build
+├── scripts/
+│   ├── setup.ps1 / setup.sh     # deps + .env from example
+│   ├── dev.ps1 / dev.sh         # start backend :8001 + frontend :5173
+│   ├── test.ps1 / test.sh       # fast tests
+│   └── stop.ps1 / stop.sh       # stop dev servers
 ├── backend/
 │   ├── app/
 │   │   ├── main.py                  # FastAPI app entry point
@@ -198,40 +261,27 @@ codeguard-ai/
 │   │       ├── validation.py        # /validate, /fix, /explain, /find-bugs, etc.
 │   │       ├── models.py            # /models (Ollama status + model list)
 │   │       ├── projects.py          # CRUD projects
-│   │       └── history.py           # Validation history
+│   │       ├── history.py           # Validation history
+│   │       └── stats.py             # Dashboard stats/series
+│   ├── tests/                       # pytest (fast suite + llm/integration markers)
 │   ├── requirements.txt
-│   ├── .env
+│   ├── .env.example                 # copy → .env (never commit .env)
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
 │   │   ├── App.tsx                  # Router
 │   │   ├── main.tsx                 # Entry point
 │   │   ├── index.css                # Tailwind + custom styles
-│   │   ├── components/
-│   │   │   ├── CodeEditor/          # Monaco editor with dark theme
-│   │   │   ├── ValidationPanel/     # Action buttons + result display
-│   │   │   ├── IssueList/           # Expandable issue cards with severity
-│   │   │   ├── ScoreCard/           # SVG circular score ring
-│   │   │   ├── DiffViewer/          # Side-by-side original vs fixed
-│   │   │   ├── ModelSelector/       # Ollama model picker
-│   │   │   ├── LanguageSelector/    # 16-language dropdown
-│   │   │   └── Sidebar.tsx          # Navigation sidebar
-│   │   ├── pages/
-│   │   │   ├── Dashboard.tsx        # Stats, recent validations, quick start
-│   │   │   ├── Validator.tsx        # Main editor + analysis view
-│   │   │   ├── History.tsx          # Past validation records
-│   │   │   └── Settings.tsx         # Ollama connection, models, config
-│   │   ├── services/
-│   │   │   └── api.ts               # Typed fetch client for all endpoints
-│   │   └── stores/
-│   │       └── validationStore.ts   # Zustand state management
+│   │   ├── components/              # CodeEditor, IssueList, charts, layout, …
+│   │   ├── pages/                   # Dashboard, Validator, History, Settings
+│   │   ├── services/api.ts          # Typed fetch client
+│   │   └── stores/                  # Zustand state
 │   ├── package.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   ├── tsconfig.json
+│   ├── vite.config.ts               # Dev proxy /api → :8001
 │   └── Dockerfile
 ├── docker-compose.yml
-└── .gitignore
+├── .gitignore                       # ignores backend/.env, secrets, caches
+└── README.md
 ```
 
 ## API Endpoints
@@ -269,7 +319,7 @@ curl -X POST http://localhost:8001/api/v1/validate \
   -d '{
     "code": "def add(a, b):\n    return a + b",
     "language": "auto",
-    "model": "qwen2.5-coder:7b"
+    "model": "deepseek-r1:7b-fast"
   }'
 ```
 
@@ -398,7 +448,7 @@ Fix: Verify username/password in `.env` matches your PostgreSQL role.
 Ollama status: disconnected
 ```
 
-Fix: Start Ollama (`ollama serve`) and pull a model (`ollama pull qwen2.5-coder:7b`).
+Fix: Start Ollama (`ollama serve`) and pull a model (`ollama pull deepseek-r1:7b-fast`).
 
 ### Port conflict
 
