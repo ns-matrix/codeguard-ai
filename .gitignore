@@ -27,3 +27,4 @@ frontend/.env.local
 # local-only run helpers (do not push)
 run.bat
 stop.bat
+logs/
