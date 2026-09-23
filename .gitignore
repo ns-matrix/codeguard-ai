@@ -24,3 +24,6 @@ frontend/.env
 frontend/.env.local
 .backend.pid
 .frontend.pid
+# local-only run helpers (do not push)
+run.bat
+stop.bat
