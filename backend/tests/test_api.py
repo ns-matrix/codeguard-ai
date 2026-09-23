@@ -29,6 +29,7 @@ async def test_detect_language_too_long(client):
     assert r.status_code == 422
 
 
+@pytest.mark.llm
 async def test_models_endpoint_real_ollama(client):
     r = await client.get("/api/v1/models")
     assert r.status_code == 200
